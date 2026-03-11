@@ -1,4 +1,5 @@
 import { BusEvent } from "@/bus/bus-event"
+import { SessionID } from "./schema"
 import z from "zod"
 import { NamedError } from "@opencode-ai/util/error"
 import { APICallError, convertToModelMessages, LoadAPIKeyError, type ModelMessage, type UIMessage } from "ai"
@@ -76,7 +77,7 @@ export namespace MessageV2 {
 
   const PartBase = z.object({
     id: z.string(),
-    sessionID: z.string(),
+    sessionID: SessionID.zod,
     messageID: z.string(),
   })
 
@@ -341,7 +342,7 @@ export namespace MessageV2 {
 
   const Base = z.object({
     id: z.string(),
-    sessionID: z.string(),
+    sessionID: SessionID.zod,
   })
 
   export const User = Base.extend({
@@ -454,7 +455,7 @@ export namespace MessageV2 {
     Removed: BusEvent.define(
       "message.removed",
       z.object({
-        sessionID: z.string(),
+        sessionID: SessionID.zod,
         messageID: z.string(),
       }),
     ),
@@ -467,7 +468,7 @@ export namespace MessageV2 {
     PartDelta: BusEvent.define(
       "message.part.delta",
       z.object({
-        sessionID: z.string(),
+        sessionID: SessionID.zod,
         messageID: z.string(),
         partID: z.string(),
         field: z.string(),
@@ -477,7 +478,7 @@ export namespace MessageV2 {
     PartRemoved: BusEvent.define(
       "message.part.removed",
       z.object({
-        sessionID: z.string(),
+        sessionID: SessionID.zod,
         messageID: z.string(),
         partID: z.string(),
       }),
@@ -725,7 +726,7 @@ export namespace MessageV2 {
     )
   }
 
-  export const stream = fn(Identifier.schema("session"), async function* (sessionID) {
+  export const stream = fn(SessionID.zod, async function* (sessionID) {
     const size = 50
     let offset = 0
     while (true) {
@@ -789,7 +790,7 @@ export namespace MessageV2 {
 
   export const get = fn(
     z.object({
-      sessionID: Identifier.schema("session"),
+      sessionID: SessionID.zod,
       messageID: Identifier.schema("message"),
     }),
     async (input): Promise<WithParts> => {

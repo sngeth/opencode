@@ -6,9 +6,10 @@ import { assertExternalDirectory } from "../../src/tool/external-directory"
 import type { PermissionNext } from "../../src/permission/next"
 import { Filesystem } from "../../src/util/filesystem"
 import { tmpdir } from "../fixture/fixture"
+import { SessionID } from "../../src/session/schema"
 
 const baseCtx: Omit<Tool.Context, "ask"> = {
-  sessionID: "test",
+  sessionID: SessionID.make("ses_test"),
   messageID: "",
   callID: "",
   agent: "build",
