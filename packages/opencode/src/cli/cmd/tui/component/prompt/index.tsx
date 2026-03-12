@@ -34,6 +34,7 @@ import { useToast } from "../../ui/toast"
 import { useKV } from "../../context/kv"
 import { useTextareaKeybindings } from "../textarea-keybindings"
 import { DialogSkill } from "../dialog-skill"
+import { useVim } from "@tui/context/vim"
 
 export type PromptProps = {
   sessionID?: string
@@ -78,6 +79,7 @@ export function Prompt(props: PromptProps) {
   const renderer = useRenderer()
   const { theme, syntax } = useTheme()
   const kv = useKV()
+  const vim = useVim()
 
   function promptModelWarning() {
     toast.show({
@@ -217,7 +219,7 @@ export function Prompt(props: PromptProps) {
         keybind: "session_interrupt",
         category: "Session",
         hidden: true,
-        enabled: status().type !== "idle",
+        enabled: status().type !== "idle" && !(vim.enabled && vim.mode === "insert"),
         onSelect: (dialog) => {
           if (autocomplete.visible) return
           if (!input.focused) return
@@ -852,6 +854,25 @@ export function Prompt(props: PromptProps) {
                   e.preventDefault()
                   return
                 }
+                if (vim.enabled) {
+                  const result = vim.handleKey(
+                    { key: e.name, ctrl: !!e.ctrl, shift: !!e.shift, meta: !!e.meta },
+                    input.plainText,
+                    input.cursorOffset,
+                  )
+                  if (result.consumed) {
+                    e.preventDefault()
+                    if (result.newText !== undefined) {
+                      input.setText(result.newText)
+                      syncExtmarksWithPromptParts()
+                      setStore("prompt", "input", result.newText)
+                    }
+                    if (result.newCursor !== undefined) {
+                      input.cursorOffset = result.newCursor
+                    }
+                    return
+                  }
+                }
                 // Handle clipboard paste (Ctrl+V) - check for images first on Windows
                 // This is needed because Windows terminal doesn't properly send image data
                 // through bracketed paste, so we need to intercept the keypress and
@@ -1016,6 +1037,9 @@ export function Prompt(props: PromptProps) {
               <text fg={highlight()}>
                 {store.mode === "shell" ? "Shell" : Locale.titlecase(local.agent.current().name)}{" "}
               </text>
+              <Show when={vim.enabled}>
+                <text fg={theme.textMuted}>{vim.mode === "normal" ? "-- NORMAL --" : "-- INSERT --"}</text>
+              </Show>
               <Show when={store.mode === "normal"}>
                 <box flexDirection="row" gap={1}>
                   <text flexShrink={0} fg={keybind.leader ? theme.textMuted : theme.text}>

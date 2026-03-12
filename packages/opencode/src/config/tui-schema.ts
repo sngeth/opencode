@@ -29,6 +29,7 @@ export const TuiInfo = z
     $schema: z.string().optional(),
     theme: z.string().optional(),
     keybinds: KeybindOverride.optional(),
+    vim: z.boolean().optional().describe("Enable vim editing mode in the prompt input"),
   })
   .extend(TuiOptions.shape)
   .strict()
